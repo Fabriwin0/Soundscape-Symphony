@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soundscape Visualizer</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Roboto:wght@300;400;500&display=swap">
+    <style>
+        :root {
+            --primary: #6200ea;
+            --primary-light: #9d46ff;
+            --primary-dark: #0a00b6;
+            --secondary: #00e5ff;
+            --secondary-light: #6effff;
+            --secondary-dark: #00b2cc;
+            --text-light: #ffffff;
+            --text-dark: #121212;
+            --background: #121212;
+            --background-light: #2a2a2a;
+            --accent: #ff3d00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--background);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            margin-right: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            background: var(--background-light);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .visualizer-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 60vh;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visualizer-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--text-light);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, var(--accent), #ff6e40);
+        }
+
+        .btn-record.recording {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            animation: pulse 1.5s infinite;
+        }
+
+        .select-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--text-light);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            appearance: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3);
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 0.8rem;
+            color: var(--secondary);
+        }
+
+        .slider-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--background);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: var(--secondary-light);
+            transform: scale(1.2);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .color-input {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #888;
+        }
+
+        .indicator-dot.active {
+            background-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .preset-btn.active {
+            background: var(--secondary-dark);
+            border-color: var(--secondary);
+            color: var(--text-light);
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background-color: var(--background-light);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .visualizer-info {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            z-index: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        .audio-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .wave-bar {
+            width: 4px;
+            height: 3px;
+            background: var(--secondary);
+            margin: 0 2px;
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 61, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 61, 0, 0);
+            }
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .controls-container {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .control-group {
+                min-width: 100%;
+            }
+            
+            .visualizer-container {
+                min-height: 40vh;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <span class="logo-icon">🎵</span>
+                <span>Soundscape Visualizer</span>
+            </div>
+        </nav>
+    </header>
+
+    <div class="main-container">
+        <div class="controls-container">
+            <div class="control-group">
+                <h3>Visualization</h3>
+                <div class="select-wrapper">
+                    <select id="visualizationType">
+                        <option value="bars">Classic Bars</option>
+                        <option value="circular">Circular</option>
+                        <option value="wave">Wave</option>
+                        <option value="spectrum">Spectrum</option>
+                        <option value="particles">Particles</option>
+                        <option value="terrain">3D Terrain</option>
+                        <option value="guitarHero">Guitar Hero</option>
+                        <option value="starfield">Starfield</option>
+                        <option value="frequency">Frequency Mesh</option>
+                        <option value="orbs">Energy Orbs</option>
+                        <option value="ripple">Ripple</option>
+                        <option value="waveform">Waveform</option>
+                        <option value="fractal">Fractal</option>
+                        <option value="spiral">Spiral</option>
+                        <option value="bubbles">Bubbles</option>
+                        <option value="fireflies">Fireflies</option>
+                        <option value="grid">Grid</option>
+                        <option value="tunnel">Tunnel</option>
+                        <option value="galaxy">Galaxy</option>
+                        <option value="matrix">Matrix</option>
+                        <option value="surface3d">Surface 3D</option>
+                    </select>
+                </div>
+
+                <div class="preset-buttons">
+                    <button class="preset-btn active" data-preset="default">Default</button>
+                    <button class="preset-btn" data-preset="neon">Neon</button>
+                    <button class="preset-btn" data-preset="minimal">Minimal</button>
+                    <button class="preset-btn" data-preset="dark">Dark</button>
+                    <button class="preset-btn" data-preset="retro">Retro</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Audio Controls</h3>
+                <button id="recordButton" class="btn btn-record">
+                    <span class="btn-icon">🎤</span>
+                    <span class="btn-text">Start Recording</span>
+                </button>
+                <button id="fullscreenButton" class="btn" style="margin-top:1rem;">
+                    <span class="btn-icon">⛶</span>
+                    <span class="btn-text">Full Screen</span>
+                </button>
+                
+                <div class="status-indicator">
+                    <div id="recordingIndicator" class="indicator-dot"></div>
+                    <span id="recordingStatus">Not recording</span>
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Sensitivity</span>
+                        <span id="sensitivityValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="sensitivitySlider">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Appearance</h3>
+                <div class="color-picker">
+                    <input type="color" class="color-input" id="primaryColor" value="#9d46ff">
+                    <input type="color" class="color-input" id="secondaryColor" value="#00e5ff">
+                    <input type="color" class="color-input" id="backgroundColor" value="#121212">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Animation Speed</span>
+                        <span id="speedValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="speedSlider">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Intensity</span>
+                        <span id="intensityValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="intensitySlider">
+                </div>
+            </div>
+
+            <div class="control-group" id="matrixSettingsGroup" style="display:none;">
+                <h3>Matrix Settings</h3>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Font Size</span>
+                        <span id="matrixFontSizeValue">16</span>
+                    </div>
+                    <input type="range" min="10" max="40" value="16" class="slider" id="matrixFontSizeSlider">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Speed</span>
+                        <span id="matrixSpeedValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="20" value="5" class="slider" id="matrixSpeedSlider">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Charset</span>
+                    </div>
+                    <input type="text" id="matrixCharsetInput" value="アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #333;background:#181818;color:#fff;">
+                </div>
+            </div>
+
+            <div class="control-group" id="starfieldThemesGroup" style="display:none;">
+                <h3>Starfield Themes</h3>
+                <div class="preset-buttons" id="starfieldThemeButtons"></div>
+            </div>
+
+            <div class="control-group" id="surface3dSettingsGroup" style="display:none;">
+                <h3>Surface 3D Themes</h3>
+                <div class="preset-buttons" id="surface3dThemeButtons"></div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Color Map</span>
+                        <select id="surface3dColormap" style="padding:0.3rem 1rem;border-radius:6px;">
+                            <option value="rainbow">Rainbow</option>
+                            <option value="hot">Hot</option>
+                            <option value="cool">Cool</option>
+                            <option value="inferno">Inferno</option>
+                            <option value="magma">Magma</option>
+                            <option value="viridis">Viridis</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Perspective</span>
+                        <span id="surface3dPerspectiveValue">1.2</span>
+                    </div>
+                    <input type="range" min="0.5" max="2" step="0.01" value="1.2" class="slider" id="surface3dPerspectiveSlider">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Rotation</span>
+                        <span id="surface3dRotationValue">0</span>
+                    </div>
+                    <input type="range" min="-1" max="1" step="0.01" value="0" class="slider" id="surface3dRotationSlider">
+                </div>
+            </div>
+        </div>
+
+        <div class="visualizer-container">
+            <div class="visualizer-info">
+                <span id="currentVisualizer">Classic Bars</span>
+            </div>
+            <canvas id="visualizerCanvas" class="visualizer-canvas"></canvas>
+            <div id="audioWave" class="audio-wave"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 Soundscape Visualizer | Create stunning audio visualizations with your microphone</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const visualizerCanvas = document.getElementById('visualizerCanvas');
+            const ctx = visualizerCanvas.getContext('2d');
+            const recordButton = document.getElementById('recordButton');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+            const recordingStatus = document.getElementById('recordingStatus');
+            const visualizationType = document.getElementById('visualizationType');
+            const sensitivitySlider = document.getElementById('sensitivitySlider');
+            const sensitivityValue = document.getElementById('sensitivityValue');
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            const intensitySlider = document.getElementById('intensitySlider');
+            const intensityValue = document.getElementById('intensityValue');
+            const primaryColor = document.getElementById('primaryColor');
+            const secondaryColor = document.getElementById('secondaryColor');
+            const backgroundColor = document.getElementById('backgroundColor');
+            const currentVisualizer = document.getElementById('currentVisualizer');
+            const audioWave = document.getElementById('audioWave');
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            const fullscreenButton = document.getElementById('fullscreenButton');
+            const visualizerContainer = document.querySelector('.visualizer-container');
+            const matrixSettingsGroup = document.getElementById('matrixSettingsGroup');
+            const matrixFontSizeSlider = document.getElementById('matrixFontSizeSlider');
+            const matrixFontSizeValue = document.getElementById('matrixFontSizeValue');
+            const matrixSpeedSlider = document.getElementById('matrixSpeedSlider');
+            const matrixSpeedValue = document.getElementById('matrixSpeedValue');
+            const matrixCharsetInput = document.getElementById('matrixCharsetInput');
+            const starfieldThemesGroup = document.getElementById('starfieldThemesGroup');
+            const starfieldThemeButtons = document.getElementById('starfieldThemeButtons');
+            const surface3dSettingsGroup = document.getElementById('surface3dSettingsGroup');
+            const surface3dThemeButtons = document.getElementById('surface3dThemeButtons');
+            const surface3dColormap = document.getElementById('surface3dColormap');
+            const surface3dPerspectiveSlider = document.getElementById('surface3dPerspectiveSlider');
+            const surface3dPerspectiveValue = document.getElementById('surface3dPerspectiveValue');
+            const surface3dRotationSlider = document.getElementById('surface3dRotationSlider');
+            const surface3dRotationValue = document.getElementById('surface3dRotationValue');
+
+            // Audio variables
+            let audioContext;
+            let analyser;
+            let microphone;
+            let dataArray = [];
+            let isRecording = false;
+            let animationId;
+            let sensitivity = 5;
+            let speed = 5;
+            let intensity = 5;
+            let visualizerType = 'bars';
+            let matrixFontSize = 16;
+            let matrixSpeed = 5;
+            let matrixCharset = matrixCharsetInput.value;
+            let matrixColumns = [];
+            let matrixDrops = [];
+            let currentStarfieldTheme = 0;
+            let currentSurface3dTheme = 0;
+            let surface3dColormapValue = "rainbow";
+            let surface3dPerspective = 1.2;
+            let surface3dRotation = 0;
+
+            // Starfield themes
+            const starfieldThemes = [
+                { name: "Classic", bg: "#111", color: "#fff", explode: false, trail: false, bassExplode: false },
+                { name: "Neon Blue", bg: "#0a192f", color: "#00eaff", explode: true, trail: true, bassExplode: true },
+                { name: "Purple Dream", bg: "#2d0036", color: "#e600ff", explode: true, trail: false, bassExplode: false },
+                { name: "Retro Sun", bg: "#ffb347", color: "#ff0099", explode: true, trail: true, bassExplode: true },
+                { name: "Matrix Green", bg: "#001a00", color: "#00ff41", explode: false, trail: true, bassExplode: false },
+                { name: "Firestorm", bg: "#1a0000", color: "#ff5400", explode: true, trail: false, bassExplode: true },
+                { name: "Ice World", bg: "#001f3f", color: "#7fdbff", explode: false, trail: true, bassExplode: false },
+                { name: "Cyberpunk", bg: "#120458", color: "#ff00a0", explode: true, trail: true, bassExplode: true },
+                { name: "Emerald", bg: "#011627", color: "#2ec4b6", explode: false, trail: false, bassExplode: false },
+                { name: "Sunset", bg: "#220901", color: "#ff7b00", explode: true, trail: true, bassExplode: false },
+                { name: "Aurora", bg: "#001d3d", color: "#00ffb3", explode: true, trail: false, bassExplode: true },
+                { name: "Gold Rush", bg: "#2d1600", color: "#ffd700", explode: false, trail: true, bassExplode: false },
+                { name: "Pink Pop", bg: "#3a0ca3", color: "#ff61a6", explode: true, trail: true, bassExplode: true },
+                { name: "Deep Space", bg: "#000814", color: "#00b4d8", explode: false, trail: false, bassExplode: false },
+                { name: "Lime Glow", bg: "#142f01", color: "#baff39", explode: true, trail: false, bassExplode: true },
+                { name: "Vaporwave", bg: "#ffb3c6", color: "#a0c4ff", explode: true, trail: true, bassExplode: false },
+                { name: "Red Alert", bg: "#2d0000", color: "#ff1744", explode: true, trail: false, bassExplode: true },
+                { name: "Oceanic", bg: "#001f54", color: "#00e5ff", explode: false, trail: true, bassExplode: false },
+                { name: "Lava", bg: "#3a0d00", color: "#ff6f00", explode: true, trail: true, bassExplode: true },
+                { name: "Whiteout", bg: "#f8f9fa", color: "#adb5bd", explode: false, trail: false, bassExplode: false }
+            ];
+
+            // Surface 3D themes
+            const surface3dThemes = [
+                { name: "Classic", bg: "#181818", grid: "#fff", wire: false },
+                { name: "Wireframe", bg: "#000", grid: "#fff", wire: true },
+                { name: "Night", bg: "#0a0a23", grid: "#00eaff", wire: false },
+                { name: "Inferno", bg: "#1a0000", grid: "#ff5400", wire: false },
+                { name: "Rainbow", bg: "#222", grid: "#fff", wire: false },
+                { name: "Matrix", bg: "#001a00", grid: "#00ff41", wire: true },
+                { name: "Sunset", bg: "#220901", grid: "#ff7b00", wire: false },
+                { name: "Ocean", bg: "#001f54", grid: "#00e5ff", wire: false },
+                { name: "Lava", bg: "#3a0d00", grid: "#ff6f00", wire: false },
+                { name: "Whiteout", bg: "#f8f9fa", grid: "#adb5bd", wire: false }
+            ];
+
+            // Set initial current visualizer text
+            currentVisualizer.textContent = 'Classic Bars';
+
+            // Create audio wave bars
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'wave-bar';
+                audioWave.appendChild(bar);
+            }
+            const waveBars = document.querySelectorAll('.wave-bar');
+
+            // Initialize canvas size
+            function resizeCanvas() {
+                visualizerCanvas.width = visualizerCanvas.offsetWidth;
+                visualizerCanvas.height = visualizerCanvas.offsetHeight;
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Audio setup
+            async function setupAudio() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    
+                    // Adjust FFT size based on sensitivity
+                    analyser.fftSize = 2048;
+                    
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    
+                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    isRecording = true;
+                    recordingIndicator.classList.add('active');
+                    recordingStatus.textContent = 'Recording in progress';
+                    recordButton.classList.add('recording');
+                    recordButton.querySelector('.btn-text').textContent = 'Stop Recording';
+                    
+                    // Start visualization
+                    visualize();
+                } catch (err) {
+                    console.error('Error accessing microphone:', err);
+                    alert('Error accessing microphone. Please check your permissions and try again.');
+                }
+            }
+
+            function stopAudio() {
+                if (microphone && analyser) {
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                    
+                    microphone.disconnect();
+                    microphone = null;
+                    
+                    if (audioContext) {
+                        audioContext.close();
+                        audioContext = null;
+                    }
+                    
+                    isRecording = false;
+                    recordingIndicator.classList.remove('active');
+                    recordingStatus.textContent = 'Not recording';
+                    recordButton.classList.remove('recording');
+                    recordButton.querySelector('.btn-text').textContent = 'Start Recording';
+                    
+                    // Reset the wave bars
+                    waveBars.forEach(bar => {
+                        bar.style.height = '3px';
+                    });
+                }
+            }
+
+            // Visualization functions
+            function visualize() {
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                
+                // Set visualization based on selected type
+                switch (visualizerType) {
+                    case 'bars':
+                        drawBars();
+                        break;
+                    case 'circular':
+                        drawCircular();
+                        break;
+                    case 'wave':
+                        drawWave();
+                        break;
+                    case 'spectrum':
+                        drawSpectrum();
+                        break;
+                    case 'particles':
+                        drawParticles();
+                        break;
+                    case 'terrain':
+                        draw3DTerrain();
+                        break;
+                    case 'starfield':
+                        drawStarfield();
+                        break;
+                    case 'frequency':
+                        drawFrequencyMesh();
+                        break;
+                    case 'orbs':
+                        drawOrbs();
+                        break;
+                    case 'ripple':
+                        drawRipple();
+                        break;
+                    case 'waveform':
+                        drawWaveform();
+                        break;
+                    case 'fractal':
+                        drawFractal();
+                        break;
+                    case 'spiral':
+                        drawSpiral();
+                        break;
+                    case 'bubbles':
+                        drawBubbles();
+                        break;
+                    case 'fireflies':
+                        drawFireflies();
+                        break;
+                    case 'grid':
+                        drawGrid();
+                        break;
+                    case 'tunnel':
+                        drawTunnel();
+                        break;
+                    case 'galaxy':
+                        drawGalaxy();
+                        break;
+                    case 'matrix':
+                        drawMatrix();
+                        break;
+                    case 'surface3d':
+                        drawSurface3D();
+                        break;
+                    default:
+                        drawBars();
+                }
+                
+                // Update the audio wave visualization
+                updateAudioWave();
+                
+                // Continue animation
+                animationId = requestAnimationFrame(visualize);
+            }
+
+            function updateAudioWave() {
+                const barCount = waveBars.length;
+                const step = Math.floor(dataArray.length / barCount);
+                
+                waveBars.forEach((bar, index) => {
+                    const dataIndex = index * step;
+                    const value = dataArray[dataIndex] / 255;
+                    const height = Math.max(3, value * 50);
+                    bar.style.height = `${height}px`;
+                });
+            }
+
+            function drawBars() {
+                const barCount = Math.floor(visualizerCanvas.width / 8);
+                const barWidth = (visualizerCanvas.width / barCount) - 2;
+                const heightMultiplier = visualizerCanvas.height / 255 * (intensity / 5);
+                
+                ctx.fillStyle = primaryColor.value;
+                
+                for (let i = 0; i < barCount; i++) {
+                    const step = Math.floor(dataArray.length / barCount);
+                    const value = dataArray[i * step] * (sensitivity / 5);
+                    const barHeight = value * heightMultiplier;
+                    const x = i * (barWidth + 2);
+                    const y = visualizerCanvas.height - barHeight;
+                    
+                    // Create gradient
+                    const gradient = ctx.createLinearGradient(x, y, x, visualizerCanvas.height);
+                    gradient.addColorStop(0, primaryColor.value);
+                    gradient.addColorStop(1, secondaryColor.value);
+                    ctx.fillStyle = gradient;
+                    
+                    ctx.fillRect(x, y, barWidth, barHeight);
+                }
+            }
+
+            function drawCircular() {
+                const centerX = visualizerCanvas.width / 2;
+                const centerY = visualizerCanvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.8 * (intensity / 5);
+                const barCount = 180;
+                const angleStep = (2 * Math.PI) / barCount;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = primaryColor.value;
+                ctx.fill();
+                
+                for (let i = 0; i < barCount; i++) {
+                    const step = Math.floor(dataArray.length / barCount);
+                    const value = dataArray[i * step] * (sensitivity / 5);
+                    const barHeight = value * (radius / 255);
+                    const angle = i * angleStep;
+                    
+                    const x1 = centerX + Math.cos(angle) * radius;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.lineWidth = 2;
+                    
+                    // Use the gradient based on the value
+                    const hue = (i / barCount * 360) % 360;
+                    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                    
+                    ctx.stroke();
+                }
+            }
+
+            function drawWave() {
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const centerY = height / 2;
+                const points = width / 2;
+                const smoothingFactor = speed / 10;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                
+                for (let i = 0; i < points; i++) {
+                    const step = Math.floor(dataArray.length / points);
+                    const value = dataArray[i * step] * (sensitivity / 5);
+                    const amplitude = value * (height / 2) / 255 * (intensity / 5);
+                    const x = i * (width / points);
+                    const y = centerY + Math.sin(i * smoothingFactor) * amplitude;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                // Create gradient
+                const gradient = ctx.createLinearGradient(0, 0, width, 0);
+                gradient.addColorStop(0, primaryColor.value);
+                gradient.addColorStop(0.5, secondaryColor.value);
+                gradient.addColorStop(1, primaryColor.value);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Mirror the wave for the bottom half
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                
+                for (let i = 0; i < points; i++) {
+                    const step = Math.floor(dataArray.length / points);
+                    const value = dataArray[i * step] * (sensitivity / 5);
+                    const amplitude = value * (height / 2) / 255 * (intensity / 5);
+                    const x = i * (width / points);
+                    const y = centerY - Math.sin(i * smoothingFactor) * amplitude;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            function drawSpectrum() {
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const barCount = Math.floor(width / 4);
+                const barWidth = width / barCount - 1;
+                
+                ctx.fillStyle = primaryColor.value;
+                
+                for (let i = 0; i < barCount; i++) {
+                    const step = Math.floor(dataArray.length / barCount);
+                    const value = dataArray[i * step] * (sensitivity / 5);
+                    
+                    // Create a more interesting spectrum by using different height calculations
+                    let barHeight;
+                    if (i < barCount / 3) {
+                        // Low frequencies
+                        barHeight = value * (height / 255) * (0.5 + intensity / 10);
+                    } else if (i < barCount * 2/3) {
+                        // Mid frequencies
+                        barHeight = value * (height / 255) * (0.7 + intensity / 10);
+                    } else {
+                        // High frequencies
+                        barHeight = value * (height / 255) * (0.3 + intensity / 10);
+                    }
+                    
+                    const x = i * (barWidth + 1);
+                    const y = height - barHeight;
+                    
+                    // Create gradient for color transition
+                    const hue = (i / barCount * 360) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                    
+                    ctx.fillRect(x, y, barWidth, barHeight);
+                    
+                    // Add smaller reflection
+                    const reflectionHeight = barHeight * 0.3;
+                    const gradient = ctx.createLinearGradient(x, 0, x, reflectionHeight);
+                    gradient.addColorStop(0, `hsla(${hue}, 100%, 50%, 0.1)`);
+                    gradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, height, barWidth, -reflectionHeight);
+                }
+            }
+
+            function drawParticles() {
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Calculate the average intensity
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const avgIntensity = sum / dataArray.length * (sensitivity / 5);
+
+                // Draw particles radiating from center
+                const particleCount = 120 + Math.floor(intensity * 8);
+                for (let i = 0; i < particleCount; i++) {
+                    const idx = Math.floor(i / particleCount * dataArray.length);
+                    const amp = dataArray[idx] / 255;
+                    const angle = (i / particleCount) * Math.PI * 2 + performance.now() * 0.0002 * speed;
+                    const r = (Math.min(centerX, centerY) * 0.5 + amp * 120) * (0.7 + intensity / 10);
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4 + amp * 12, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,229,255,${0.3 + amp * 0.7})`;
+                    ctx.shadowColor = secondaryColor.value;
+                    ctx.shadowBlur = 10 + amp * 30;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            function draw3DTerrain() {
+                // 3D terrain-like frequency mesh using 2D canvas
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const cols = 64;
+                const rows = 32;
+                const cellW = width / cols;
+                const cellH = height / rows;
+                const freqStep = Math.floor(dataArray.length / cols);
+
+                // Background gradient
+                const grad = ctx.createLinearGradient(0, 0, 0, height);
+                grad.addColorStop(0, primaryColor.value);
+                grad.addColorStop(1, backgroundColor.value);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+
+                // Draw mesh
+                ctx.save();
+                ctx.globalAlpha = 0.85;
+                for (let y = 0; y < rows; y++) {
+                    ctx.beginPath();
+                    for (let x = 0; x < cols; x++) {
+                        // Simulate "height" using frequency data and a moving wave
+                        const freqIdx = x * freqStep;
+                        const freq = dataArray[freqIdx] || 0;
+                        const t = performance.now() * 0.001 * (0.5 + speed / 10);
+                        const z = Math.sin(t + x * 0.2 + y * 0.3) * 10 + (freq / 255) * 60 * (intensity / 5);
+                        const px = x * cellW;
+                        const py = y * cellH - z;
+                        if (x === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.strokeStyle = secondaryColor.value;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.7;
+                    ctx.stroke();
+                }
+                // Draw vertical mesh lines for 3D effect
+                for (let x = 0; x < cols; x++) {
+                    ctx.beginPath();
+                    for (let y = 0; y < rows; y++) {
+                        const freqIdx = x * freqStep;
+                        const freq = dataArray[freqIdx] || 0;
+                        const t = performance.now() * 0.001 * (0.5 + speed / 10);
+                        const z = Math.sin(t + x * 0.2 + y * 0.3) * 10 + (freq / 255) * 60 * (intensity / 5);
+                        const px = x * cellW;
+                        const py = y * cellH - z;
+                        if (y === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.strokeStyle = primaryColor.value;
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.4;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawMatrix() {
+                // Enhanced Matrix effect
+                ctx.fillStyle = backgroundColor.value + "e6";
+                ctx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+                ctx.font = `${matrixFontSize}px monospace`;
+                ctx.textAlign = "center";
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const columns = Math.floor(width / matrixFontSize);
+
+                // Initialize columns/drops if needed
+                if (matrixColumns.length !== columns) setupMatrix();
+
+                for (let i = 0; i < columns; i++) {
+                    const char = matrixCharset.charAt(Math.floor(Math.random() * matrixCharset.length));
+                    const x = matrixColumns[i];
+                    const y = matrixDrops[i] * matrixFontSize;
+
+                    // Color based on audio
+                    const freqIdx = Math.floor(i / columns * dataArray.length);
+                    const value = dataArray[freqIdx] || 0;
+                    const green = Math.min(255, 100 + value);
+                    ctx.fillStyle = `rgb(0,${green},70)`;
+                    ctx.shadowColor = `rgb(0,${green},70)`;
+                    ctx.shadowBlur = 10 + value / 8;
+
+                    ctx.fillText(char, x + matrixFontSize / 2, y);
+
+                    ctx.shadowBlur = 0;
+
+                    // Move drop down, reset randomly
+                    if (y > height && Math.random() > 0.975) {
+                        matrixDrops[i] = 0;
+                    }
+                    matrixDrops[i] += matrixSpeed / 10;
+                }
+            }
+
+            function setupMatrix() {
+                // Calculate columns and drops for matrix effect
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const columns = Math.floor(width / matrixFontSize);
+                matrixColumns = [];
+                matrixDrops = [];
+                for (let i = 0; i < columns; i++) {
+                    matrixColumns[i] = i * matrixFontSize;
+                    matrixDrops[i] = Math.random() * height / matrixFontSize;
+                }
+            }
+
+            function drawStarfield() {
+                // Starfield with theme and "exploding" feature
+                const theme = starfieldThemes[currentStarfieldTheme];
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const numStars = 180 + intensity * 20;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const maxDepth = 1.5 + intensity / 2;
+
+                // Persist star positions and explosions between frames
+                if (!drawStarfield.stars || drawStarfield.stars.length !== numStars) {
+                    drawStarfield.stars = [];
+                    drawStarfield.explosions = [];
+                    for (let i = 0; i < numStars; i++) {
+                        drawStarfield.stars.push({
+                            x: (Math.random() - 0.5) * width,
+                            y: (Math.random() - 0.5) * height,
+                            z: Math.random() * maxDepth + 0.2,
+                            color: theme.color
+                        });
+                    }
+                }
+                const stars = drawStarfield.stars;
+                const explosions = drawStarfield.explosions || [];
+
+                // Background
+                ctx.save();
+                ctx.fillStyle = theme.bg;
+                ctx.globalAlpha = 0.9;
+                ctx.fillRect(0, 0, width, height);
+                ctx.globalAlpha = 1;
+
+                // Optional trail effect
+                if (theme.trail) {
+                    ctx.globalAlpha = 0.18;
+                    ctx.fillStyle = theme.bg;
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.globalAlpha = 1;
+                }
+
+                // Animate and draw stars
+                for (let i = 0; i < stars.length; i++) {
+                    let star = stars[i];
+                    // Move star forward (simulate speed)
+                    star.z -= 0.01 * (speed / 5 + 0.5);
+                    if (star.z <= 0.1) {
+                        // Reset star to far plane
+                        star.x = (Math.random() - 0.5) * width;
+                        star.y = (Math.random() - 0.5) * height;
+                        star.z = maxDepth;
+                    }
+                    // Project 3D to 2D
+                    const sx = centerX + (star.x / star.z);
+                    const sy = centerY + (star.y / star.z);
+
+                    // Color and size based on depth and audio
+                    const freqIdx = Math.floor(i / stars.length * dataArray.length);
+                    const amp = dataArray[freqIdx] / 255;
+                    let color = theme.color;
+                    let hue = 180 + amp * 180;
+                    let size = Math.max(1, (1.5 - star.z) * 2 + amp * 2);
+
+                    // Exploding effect for bass or high amplitude
+                    let shouldExplode = false;
+                    if (theme.explode && amp > 0.85) {
+                        shouldExplode = true;
+                    }
+                    if (theme.bassExplode && freqIdx < 10 && amp > 0.7) {
+                        shouldExplode = true;
+                    }
+                    if (shouldExplode) {
+                        // Add explosion
+                        explosions.push({
+                            x: sx,
+                            y: sy,
+                            color: color,
+                            radius: size * 2,
+                            alpha: 1,
+                            t: 0,
+                            hue: hue
+                        });
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                    ctx.fillStyle = color.startsWith('#') ? color : `hsl(${hue}, 100%, ${60 + amp * 30}%)`;
+                    ctx.globalAlpha = 0.7 + amp * 0.3;
+                    ctx.shadowColor = color.startsWith('#') ? color : `hsl(${hue}, 100%, 80%)`;
+                    ctx.shadowBlur = 8 + amp * 10;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                }
+
+                // Draw and update explosions
+                for (let i = explosions.length - 1; i >= 0; i--) {
+                    let ex = explosions[i];
+                    ex.radius += 2 + Math.random() * 2;
+                    ex.alpha -= 0.04 + Math.random() * 0.02;
+                    ex.t += 1;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+                    ctx.globalAlpha = Math.max(0, ex.alpha);
+                    ctx.strokeStyle = ex.color.startsWith('#') ? ex.color : `hsl(${ex.hue}, 100%, 80%)`;
+                    ctx.lineWidth = 2 + Math.random() * 2;
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 12;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                    ctx.restore();
+                    if (ex.alpha <= 0) {
+                        explosions.splice(i, 1);
+                    }
+                }
+                drawStarfield.explosions = explosions;
+                ctx.restore();
+            }
+
+            function drawSurface3D() {
+                const theme = surface3dThemes[currentSurface3dTheme];
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const cols = 64;
+                const rows = 32;
+                const cellW = width / cols;
+                const cellH = height / rows;
+                const freqStep = Math.floor(dataArray.length / cols);
+
+                // 3D params
+                const perspective = surface3dPerspective;
+                const rot = surface3dRotation;
+                const camZ = 600;
+                const camY = 180;
+
+                // Prepare mesh data
+                let mesh = [];
+                for (let y = 0; y < rows; y++) {
+                    let row = [];
+                    for (let x = 0; x < cols; x++) {
+                        const freqIdx = x * freqStep;
+                        const freq = dataArray[freqIdx] || 0;
+                        // Z height: combine freq and a moving wave
+                        const t = performance.now() * 0.001 * (0.5 + speed / 10);
+                        const z = Math.sin(t + x * 0.2 + y * 0.3) * 10 + (freq / 255) * 120 * (intensity / 5);
+                        row.push(z);
+                    }
+                    mesh.push(row);
+                }
+
+                // Background
+                ctx.save();
+                ctx.fillStyle = theme.bg;
+                ctx.fillRect(0, 0, width, height);
+
+                // Project and draw mesh
+                function project3D(x, y, z) {
+                    // Center mesh
+                    x -= cols / 2;
+                    y -= rows / 2;
+                    // Rotate around Y axis
+                    const xr = x * Math.cos(rot) - z * Math.sin(rot);
+                    const zr = x * Math.sin(rot) + z * Math.cos(rot);
+                    // Perspective projection
+                    const scale = camZ / (camZ + zr * perspective + 1);
+                    return [
+                        width / 2 + xr * cellW * scale,
+                        height * 0.7 + y * cellH * scale - (z * scale) / 2
+                    ];
+                }
+
+                // Draw surface
+                for (let y = 0; y < rows - 1; y++) {
+                    ctx.beginPath();
+                    for (let x = 0; x < cols; x++) {
+                        const z = mesh[y][x];
+                        const [px, py] = project3D(x, y, z);
+                        if (x === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    // Color by height
+                    const t = Math.max(0, Math.min(1, (Math.max(...mesh[y]) - Math.min(...mesh[y])) ? (Math.max(...mesh[y]) - Math.min(...mesh[y])) / 120 : 0));
+                    ctx.strokeStyle = getColormapColor(surface3dColormapValue, t);
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.9;
+                    ctx.stroke();
+                }
+                // Draw vertical mesh lines for 3D effect
+                for (let x = 0; x < cols; x += 2) {
+                    ctx.beginPath();
+                    for (let y = 0; y < rows; y++) {
+                        const z = mesh[y][x];
+                        const [px, py] = project3D(x, y, z);
+                        if (y === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.strokeStyle = theme.grid;
+                    ctx.lineWidth = theme.wire ? 1 : 0.5;
+                    ctx.globalAlpha = theme.wire ? 0.7 : 0.3;
+                    ctx.stroke();
+                }
+
+                // Movable canvas bars to fill the mountain (frequency bars in 3D)
+                for (let x = 0; x < cols; x++) {
+                    const freqIdx = x * freqStep;
+                    const freq = dataArray[freqIdx] || 0;
+                    const barHeight = (freq / 255) * 120 * (intensity / 5);
+                    // Project bar base and tip
+                    const [baseX, baseY] = project3D(x, rows - 1, 0);
+                    const [topX, topY] = project3D(x, rows - 1, barHeight);
+                    // Color by frequency (rainbow)
+                    ctx.beginPath();
+                    ctx.moveTo(baseX, baseY);
+                    ctx.lineTo(topX, topY);
+                    ctx.strokeStyle = getColormapColor("rainbow", freqIdx / dataArray.length);
+                    ctx.lineWidth = 4;
+                    ctx.globalAlpha = 0.95;
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.globalAlpha = 1;
+                ctx.restore();
+            }
+
+            function getColormapColor(map, t) {
+                // t in [0,1]
+                if (map === "rainbow") {
+                    const h = 240 - 240 * t;
+                    return `hsl(${h},100%,50%)`;
+                }
+                if (map === "hot") {
+                    const r = Math.min(255, 255 * t * 2);
+                    const g = Math.min(255, 255 * (t - 0.5) * 2);
+                    const b = Math.max(0, 255 * (t - 0.8) * 5);
+                    return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+                }
+                if (map === "cool") {
+                    return `rgb(${Math.round(0)},${Math.round(255 * t)},${Math.round(255 * (1 - t))})`;
+                }
+                if (map === "inferno") {
+                    // Approximate inferno
+                    const r = Math.round(255 * Math.pow(t, 0.5));
+                    const g = Math.round(80 * Math.pow(t, 1.5));
+                    const b = Math.round(30 + 180 * (1 - t));
+                    return `rgb(${r},${g},${b})`;
+                }
+                if (map === "magma") {
+                    // Approximate magma
+                    const r = Math.round(255 * Math.pow(t, 0.7));
+                    const g = Math.round(60 * Math.pow(t, 1.2));
+                    const b = Math.round(80 + 120 * (1 - t));
+                    return `rgb(${r},${g},${b})`;
+                }
+                if (map === "viridis") {
+                    // Approximate viridis
+                    const r = Math.round(68 + 187 * t);
+                    const g = Math.round(1 + 253 * t);
+                    const b = Math.round(84 + 67 * (1 - t));
+                    return `rgb(${r},${g},${b})`;
+                }
+                return "#fff";
+            }
+
+            function drawGalaxy() {
+                // Upscaled, realistic galaxy visual preset
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const numStars = 2000 + intensity * 400;
+                const spiralArms = 5;
+                const armSpread = 0.25 + 0.15 * (intensity / 10);
+                const coreRadius = Math.min(width, height) * 0.08;
+                const galaxyRadius = Math.min(width, height) * 0.48;
+                const time = performance.now() * 0.00008 * speed;
+
+                // Background
+                ctx.save();
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = "#070014";
+                ctx.fillRect(0, 0, width, height);
+
+                // Draw core glow
+                const coreGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreRadius * 2.5);
+                coreGradient.addColorStop(0, "rgba(255,255,255,0.7)");
+                coreGradient.addColorStop(0.2, "rgba(255,200,255,0.25)");
+                coreGradient.addColorStop(1, "rgba(20,0,40,0)");
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, coreRadius * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = coreGradient;
+                ctx.fill();
+
+                // Draw spiral arms
+                for (let i = 0; i < numStars; i++) {
+                    // Arm index and angle
+                    const arm = i % spiralArms;
+                    const armAngle = (arm / spiralArms) * Math.PI * 2;
+                    // Distance from center
+                    const t = Math.pow(Math.random(), 1.5);
+                    const r = coreRadius + t * (galaxyRadius - coreRadius);
+                    // Spiral angle with some noise
+                    const angle = armAngle + t * 4.5 + (Math.random() - 0.5) * armSpread + time * (0.2 + 0.8 * t);
+                    // Star position
+                    const x = centerX + Math.cos(angle) * r + (Math.random() - 0.5) * 8 * (1 - t);
+                    const y = centerY + Math.sin(angle) * r + (Math.random() - 0.5) * 8 * (1 - t);
+
+                    // Color and size by distance and audio
+                    const freqIdx = Math.floor((t * dataArray.length) % dataArray.length);
+                    const amp = dataArray[freqIdx] / 255;
+                    let color;
+                    if (t < 0.15) {
+                        color = "rgba(255,255,255,0.9)";
+                    } else if (t < 0.3) {
+                        color = `rgba(255,220,255,${0.7 + amp * 0.2})`;
+                    } else if (t < 0.7) {
+                        color = `rgba(${180 + amp * 60},${180 + amp * 40},255,${0.5 + amp * 0.3})`;
+                    } else {
+                        color = `rgba(${100 + amp * 80},${120 + amp * 60},${255 - amp * 80},${0.2 + amp * 0.2})`;
+                    }
+                    const size = 0.7 + Math.pow(1 - t, 2) * 2.5 + amp * 1.2;
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 6 + amp * 8;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Draw nebula clouds
+                for (let n = 0; n < 4; n++) {
+                    const nebAngle = time * 0.5 + n * Math.PI / 2;
+                    const nebRadius = coreRadius * (1.8 + n * 0.7);
+                    const nx = centerX + Math.cos(nebAngle) * nebRadius;
+                    const ny = centerY + Math.sin(nebAngle) * nebRadius;
+                    const nebGrad = ctx.createRadialGradient(nx, ny, 0, nx, ny, coreRadius * (1.2 + n * 0.4));
+                    nebGrad.addColorStop(0, `rgba(120,80,255,${0.12 + 0.08 * n})`);
+                    nebGrad.addColorStop(1, "rgba(20,0,40,0)");
+                    ctx.beginPath();
+                    ctx.arc(nx, ny, coreRadius * (1.2 + n * 0.4), 0, Math.PI * 2);
+                    ctx.fillStyle = nebGrad;
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            function drawFractal() {
+                // Mandelbrot fractal with audio-driven color and zoom
+                const width = visualizerCanvas.width;
+                const height = visualizerCanvas.height;
+                const maxIter = 80 + Math.floor(intensity * 12);
+                const zoom = 1.5 - (Math.max(0, Math.min(1, (intensity - 1) / 9))) * 1.2;
+                const offsetX = -0.6 + Math.sin(performance.now() * 0.0001 * speed) * 0.2;
+                const offsetY = 0 + Math.cos(performance.now() * 0.00013 * speed) * 0.2;
+
+                // Get average frequency for color modulation
+                let avg = 0;
+                for (let i = 0; i < dataArray.length; i++) avg += dataArray[i];
+                avg = avg / dataArray.length / 255;
+
+                // Render fractal
+                const img = ctx.createImageData(width, height);
+                const data = img.data;
+                for (let py = 0; py < height; py += 2) {
+                    for (let px = 0; px < width; px += 2) {
+                        // Map pixel to complex plane
+                        const x0 = ((px / width) * 3.5 - 2.5) * zoom + offsetX;
+                        const y0 = ((py / height) * 2.0 - 1.0) * zoom + offsetY;
+                        let x = 0, y = 0, iter = 0;
+                        while (x * x + y * y <= 4 && iter < maxIter) {
+                            const xtemp = x * x - y * y + x0;
+                            y = 2 * x * y + y0;
+                            x = xtemp;
+                            iter++;
+                        }
+                        // Color: audio modulates hue and brightness
+                        let hue = (220 + (px / width) * 120 + avg * 120 + Math.sin(py * 0.01 + performance.now() * 0.0005 * speed) * 40) % 360;
+                        let sat = 80 + Math.sin(iter + avg * 10) * 20;
+                        let light = iter < maxIter ? 40 + (iter / maxIter) * 60 : 0;
+                        if (iter === maxIter) {
+                            hue = 0; sat = 0; light = 0;
+                        }
+                        // Set pixel (draw 2x2 block for speed)
+                        for (let dy = 0; dy < 2; dy++) {
+                            for (let dx = 0; dx < 2; dx++) {
+                                const idx = 4 * ((py + dy) * width + (px + dx));
+                                const rgb = hslToRgb(hue / 360, sat / 100, light / 100);
+                                data[idx] = rgb[0];
+                                data[idx + 1] = rgb[1];
+                                data[idx + 2] = rgb[2];
+                                data[idx + 3] = 255;
+                            }
+                        }
+                    }
+                }
+                ctx.putImageData(img, 0, 0);
+            }
+
+            // Helper: HSL to RGB
+            function hslToRgb(h, s, l) {
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    function hue2rgb(p, q, t) {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1 / 6) return p + (q - p) * 6 * t;
+                        if (t < 1 / 2) return q;
+                        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                        return p;
+                    }
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1 / 3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1 / 3);
+                }
+                return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+            }
+
+            // Update visualizerType on select
+            visualizationType.addEventListener('change', function() {
+                visualizerType = visualizationType.value;
+                currentVisualizer.textContent = visualizationType.options[visualizationType.selectedIndex].text;
+                matrixSettingsGroup.style.display = (visualizerType === 'matrix') ? 'block' : 'none';
+                starfieldThemesGroup.style.display = (visualizerType === 'starfield') ? 'block' : 'none';
+                surface3dSettingsGroup.style.display = (visualizerType === 'surface3d') ? 'block' : 'none';
+                if (visualizerType === 'matrix') {
+                    setupMatrix();
+                }
+            });
+
+            // Matrix settings events
+            matrixFontSizeSlider.addEventListener('input', function() {
+                matrixFontSize = parseInt(matrixFontSizeSlider.value);
+                matrixFontSizeValue.textContent = matrixFontSize;
+                if (visualizerType === 'matrix') setupMatrix();
+            });
+            matrixSpeedSlider.addEventListener('input', function() {
+                matrixSpeed = parseInt(matrixSpeedSlider.value);
+                matrixSpeedValue.textContent = matrixSpeed;
+            });
+            matrixCharsetInput.addEventListener('input', function() {
+                matrixCharset = matrixCharsetInput.value || "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                if (visualizerType === 'matrix') setupMatrix();
+            });
+
+            // Build theme buttons
+            starfieldThemes.forEach((theme, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'preset-btn' + (idx === 0 ? ' active' : '');
+                btn.textContent = theme.name;
+                btn.dataset.themeIdx = idx;
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('#starfieldThemeButtons .preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentStarfieldTheme = idx;
+                });
+                starfieldThemeButtons.appendChild(btn);
+            });
+
+            surface3dThemes.forEach((theme, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'preset-btn' + (idx === 0 ? ' active' : '');
+                btn.textContent = theme.name;
+                btn.dataset.themeIdx = idx;
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('#surface3dThemeButtons .preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentSurface3dTheme = idx;
+                });
+                surface3dThemeButtons.appendChild(btn);
+            });
+
+            surface3dColormap.addEventListener('change', function() {
+                surface3dColormapValue = surface3dColormap.value;
+            });
+            surface3dPerspectiveSlider.addEventListener('input', function() {
+                surface3dPerspective = parseFloat(surface3dPerspectiveSlider.value);
+                surface3dPerspectiveValue.textContent = surface3dPerspective;
+            });
+            surface3dRotationSlider.addEventListener('input', function() {
+                surface3dRotation = parseFloat(surface3dRotationSlider.value);
+                surface3dRotationValue.textContent = surface3dRotation;
+            });
+
+            // Preset buttons
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    presetButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    switch (btn.dataset.preset) {
+                        case 'default':
+                            primaryColor.value = '#9d46ff';
+                            secondaryColor.value = '#00e5ff';
+                            backgroundColor.value = '#121212';
+                            break;
+                        case 'neon':
+                            primaryColor.value = '#ff00c8';
+                            secondaryColor.value = '#00fff7';
+                            backgroundColor.value = '#0a0026';
+                            break;
+                        case 'minimal':
+                            primaryColor.value = '#ffffff';
+                            secondaryColor.value = '#bdbdbd';
+                            backgroundColor.value = '#232323';
+                            break;
+                        case 'dark':
+                            primaryColor.value = '#22223b';
+                            secondaryColor.value = '#4a4e69';
+                            backgroundColor.value = '#121212';
+                            break;
+                        case 'retro':
+                            primaryColor.value = '#ffbe0b';
+                            secondaryColor.value = '#fb5607';
+                            backgroundColor.value = '#3a0ca3';
+                            break;
+                    }
+                    updateTheme();
+                });
+            });
+
+            // Color pickers
+            [primaryColor, secondaryColor, backgroundColor].forEach(input => {
+                input.addEventListener('input', updateTheme);
+            });
+
+            function updateTheme() {
+                document.documentElement.style.setProperty('--primary', primaryColor.value);
+                document.documentElement.style.setProperty('--secondary', secondaryColor.value);
+                document.documentElement.style.setProperty('--background', backgroundColor.value);
+            }
+
+            // Sliders
+            sensitivitySlider.addEventListener('input', function() {
+                sensitivity = parseInt(sensitivitySlider.value);
+                sensitivityValue.textContent = sensitivity;
+            });
+            speedSlider.addEventListener('input', function() {
+                speed = parseInt(speedSlider.value);
+                speedValue.textContent = speed;
+            });
+            intensitySlider.addEventListener('input', function() {
+                intensity = parseInt(intensitySlider.value);
+                intensityValue.textContent = intensity;
+            });
+
+            // Microphone record button
+            recordButton.addEventListener('click', function() {
+                if (!isRecording) {
+                    setupAudio();
+                } else {
+                    stopAudio();
+                }
+            });
+
+            // Fullscreen toggle
+            fullscreenButton.addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    if (visualizerContainer.requestFullscreen) {
+                        visualizerContainer.requestFullscreen();
+                    } else if (visualizerContainer.webkitRequestFullscreen) {
+                        visualizerContainer.webkitRequestFullscreen();
+                    } else if (visualizerContainer.msRequestFullscreen) {
+                        visualizerContainer.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            });
+
+            // Optionally, auto-hide controls in fullscreen for immersive experience
+            document.addEventListener('fullscreenchange', function() {
+                if (document.fullscreenElement) {
+                    document.querySelector('.controls-container').style.opacity = 0.1;
+                    document.querySelector('.controls-container').style.pointerEvents = 'none';
+                } else {
+                    document.querySelector('.controls-container').style.opacity = 1;
+                    document.querySelector('.controls-container').style.pointerEvents = 'auto';
+                }
+            });
+
+            // Floating album art in center
+            function drawAlbumArt() {
+                // Do nothing (removed)
+            }
+
+            // Responsive canvas
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Initial theme
+            updateTheme();
+
+        });
+    </script>
+</body>
+</html>
