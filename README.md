@@ -142,7 +142,7 @@ We welcome contributions! Feel free to:
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the [Apache-2.0 license](LICENSE).
 
 ## 🎵 Demo
 
@@ -159,5 +159,6 @@ If you encounter any issues or have questions:
 ---
 
 **Made with ❤️ for audio enthusiasts and visual artists**
+
 
 *Transform your sound into stunning visual art with SoundScape Symphony!*
